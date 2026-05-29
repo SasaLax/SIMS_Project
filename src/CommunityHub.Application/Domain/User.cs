@@ -1,5 +1,11 @@
 namespace CommunityHub.Application.Domain;
 
+public enum UserRole
+{
+    Administrator,
+    Resident,
+    Manager
+}
 public class User
 {
     public long Id { get; private set; }
@@ -10,7 +16,10 @@ public class User
     public DateTime BirthDay { get; private set; }
     public List<Post>? Posts { get; private set; }
 
-    public User(long id, string username, string password, string name, string surname, DateTime birthDay)
+
+    public UserRole Role { get; private set; }
+
+    public User(long id, string username, string password, string name, string surname, DateTime birthDay, UserRole role)
     {
         Id = id;
         Username = username;
@@ -19,6 +28,7 @@ public class User
         Surname = surname;
         BirthDay = birthDay;
         Posts = null;
+        Role = role;
     }
 
     public void AddPost(Post post)
