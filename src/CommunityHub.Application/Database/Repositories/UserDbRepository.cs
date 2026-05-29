@@ -77,8 +77,14 @@ public class UserDbRepository
                 string name = reader.GetString(3);
                 string surname = reader.GetString(4);
                 DateTime birthday = reader.GetDateTime(5);
+                string roleString = reader.GetString(6);
 
-                user = new User(id, username, password, name, surname, birthday);
+                if (!Enum.TryParse(roleString, out UserRole role))
+                {
+                    role = UserRole.Resident;
+                }
+
+                user = new User(id, username, password, name, surname, birthday, role);
             }
 
             // IsDBNull proverava da li je vrednost NULL u bazi

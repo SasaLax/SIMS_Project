@@ -10,7 +10,7 @@ namespace CommunityHub.Application.Domain
     {
         public string id { get; private set; }
 
-        public Address Address { get; private set; };
+        public Address Address { get; private set; }
 
         public string Neighbourhood { get; private set; }
 

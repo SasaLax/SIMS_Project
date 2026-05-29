@@ -15,8 +15,6 @@ public class User
     public string Surname { get; private set; }
     public DateTime BirthDay { get; private set; }
     public List<Post>? Posts { get; private set; }
-
-
     public UserRole Role { get; private set; }
 
     public User(long id, string username, string password, string name, string surname, DateTime birthDay, UserRole role)
