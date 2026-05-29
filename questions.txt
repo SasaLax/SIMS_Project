@@ -1,0 +1,2 @@
+je li treba reposiotory za address i location
+u buildingdb ih sam kreiram

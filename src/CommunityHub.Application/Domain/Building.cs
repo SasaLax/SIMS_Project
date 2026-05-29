@@ -30,7 +30,5 @@ namespace CommunityHub.Application.Domain
             this.Manager = manager;
         }
 
-
-
     }
 }
