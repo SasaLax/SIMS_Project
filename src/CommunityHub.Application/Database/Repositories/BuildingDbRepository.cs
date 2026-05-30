@@ -49,6 +49,130 @@ namespace CommunityHub.Application.Database.Repositories
             return null;
         }
 
+        public List<Building> GetAll(bool sortByFloors = false)
+        {
+            List<Building> buildings = new List<Building>();
+            using IDbConnection connection = PostgresConnection.CreateConnection();
+            using IDbCommand command = connection.CreateCommand();
+
+            string query = @"
+                SELECT b.id, a.street, a.number, b.neighbourhood, l.city, l.country, b.number_of_floors, b.manager_jmbg
+                FROM buildings b
+                JOIN addresses a ON b.address_id = a.id
+                JOIN locations l ON b.location_id = l.id";
+
+            if (sortByFloors)
+            {
+                query += " ORDER BY b.number_of_floors ASC";
+            }
+
+            command.CommandText = query;
+            using IDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                buildings.Add(MapBuildingFromReader(reader));
+            }
+            return buildings;
+        }
+
+        public List<Building> SearchByAddress(string queryText)
+        {
+            return ExecuteSearchQuery(@"
+                SELECT b.id, a.street, a.number, b.neighbourhood, l.city, l.country, b.number_of_floors, b.manager_jmbg
+                FROM buildings b
+                JOIN addresses a ON b.address_id = a.id
+                JOIN locations l ON b.location_id = l.id
+                WHERE a.street ILIKE @query OR CAST(a.number AS TEXT) ILIKE @query", $"%{queryText}%");
+        }
+
+        public List<Building> SearchByNeighbourhood(string queryText)
+        {
+            return ExecuteSearchQuery(@"
+                SELECT b.id, a.street, a.number, b.neighbourhood, l.city, l.country, b.number_of_floors, b.manager_jmbg
+                FROM buildings b
+                JOIN addresses a ON b.address_id = a.id
+                JOIN locations l ON b.location_id = l.id
+                WHERE b.neighbourhood ILIKE @query", $"%{queryText}%");
+        }
+
+        public List<Building> SearchByFloors(int floors)
+        {
+            List<Building> buildings = new List<Building>();
+            using IDbConnection connection = PostgresConnection.CreateConnection();
+            using IDbCommand command = connection.CreateCommand();
+            command.CommandText = @"
+                SELECT b.id, a.street, a.number, b.neighbourhood, l.city, l.country, b.number_of_floors, b.manager_jmbg
+                FROM buildings b
+                JOIN addresses a ON b.address_id = a.id
+                JOIN locations l ON b.location_id = l.id
+                WHERE b.number_of_floors = @floors";
+
+            AddParameter(command, "@floors", floors);
+            using IDataReader reader = command.ExecuteReader();
+            while (reader.Read()) buildings.Add(MapBuildingFromReader(reader));
+            return buildings;
+        }
+
+        public List<Building> SearchByApartmentsAdvanced(int rooms, int residents, string op)
+        {
+            List<Building> buildings = new List<Building>();
+            using IDbConnection connection = PostgresConnection.CreateConnection();
+            using IDbCommand command = connection.CreateCommand();
+
+            // Osnovni upit sa DISTINCT da nam ne duplira istu zgradu ako ima više stanova koji odgovaraju
+            string sql = @"
+                SELECT DISTINCT b.id, a.street, a.number, b.neighbourhood, l.city, l.country, b.number_of_floors, b.manager_jmbg
+                FROM buildings b
+                JOIN addresses a ON b.address_id = a.id
+                JOIN locations l ON b.location_id = l.id
+                JOIN apartments ap ON b.id = ap.building_id
+                WHERE ";
+
+            if (op == "&") // logičko I ima toliko soba i stanara
+            {
+                sql += "ap.number_of_rooms = @rooms AND ap.max_number_of_residents = @residents";
+            }
+            else if (op == "|") //soba ili stanara
+            {
+                sql += "ap.number_of_rooms = @rooms OR ap.max_number_of_residents = @residents";
+            }
+            else if (rooms > 0 && residents == 0) // po broju soba
+            {
+                sql += "ap.number_of_rooms = @rooms";
+            }
+            else // po broju stanara
+            {
+                sql += "ap.max_number_of_residents = @residents";
+            }
+
+            command.CommandText = sql;
+            AddParameter(command, "@rooms", rooms);
+            AddParameter(command, "@residents", residents);
+
+            using IDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                buildings.Add(MapBuildingFromReader(reader));
+            }
+            return buildings;
+        }
+
+        private List<Building> ExecuteSearchQuery(string sql, string paramValue)
+        {
+            List<Building> buildings = new List<Building>();
+            using IDbConnection connection = PostgresConnection.CreateConnection();
+            using IDbCommand command = connection.CreateCommand();
+            command.CommandText = sql;
+            AddParameter(command, "@query", paramValue);
+
+            using IDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                buildings.Add(MapBuildingFromReader(reader));
+            }
+            return buildings;
+        }
+
         private Building MapBuildingFromReader(IDataReader reader)
         {
             string id = reader.GetString(0);
@@ -66,29 +190,6 @@ namespace CommunityHub.Application.Database.Repositories
 
             return new Building(id, address, neightboorhood, location, numberOfFloors, manager);
         }
-
-        public List<Building> GetAll()
-        {
-            List<Building> buildings = new List<Building>();
-
-            using IDbConnection connection = PostgresConnection.CreateConnection();
-            connection.Open();
-
-            using IDbCommand command = connection.CreateCommand();
-            command.CommandText = @"
-            SELECT id, street, number, neighbourhood, city, country, number_of_floors, manager
-            FROM buildings";
-
-            using IDataReader reader = command.ExecuteReader();
-
-            while (reader.Read())
-            {
-                buildings.Add(MapBuildingFromReader(reader));
-            }
-
-            return buildings;
-        }
-
 
 
         public void AddParameter(IDbCommand command, string name, object value)

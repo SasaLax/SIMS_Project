@@ -1,0 +1,60 @@
+﻿<Window x:Class="CommunityHub.Ui.Views.BuildingSearchWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Pregled i pretraga stambenih zgrada" Height="600" Width="900"
+        WindowStartupLocation="CenterOwner" Background="#F4F6F7">
+
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="White" Padding="15" CornerRadius="5" Margin="0,0,0,15">
+            <StackPanel>
+                <TextBlock Text="Pretraga i filtriranje zgrada" FontSize="18" FontWeight="Bold" Foreground="#2C3E50" Margin="0,0,0,15"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="180"/>
+                        <ColumnDefinition Width="220"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Text="Kriterijum:" FontSize="14" VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+                    <ComboBox x:Name="cmbSearchType" Grid.Column="1" Height="30" SelectedIndex="0" Margin="0,0,10,0" SelectionChanged="CmbSearchType_SelectionChanged">
+                        <ComboBoxItem Content="Sve zgrade (Bez filtera)"/>
+                        <ComboBoxItem Content="Adresa"/>
+                        <ComboBoxItem Content="Naziv naselja"/>
+                        <ComboBoxItem Content="Broj spratova"/>
+                        <ComboBoxItem Content="Stanovi (Napredno)"/>
+                    </ComboBox>
+
+                    <TextBox x:Name="txtSearchValue" Grid.Column="2" Height="30" FontSize="14" VerticalContentAlignment="Center" Margin="0,0,10,0"/>
+
+                    <Button x:Name="btnSearch" Grid.Column="3" Content="Traži" Width="80" Height="30" Background="#007ACC" Foreground="White" FontWeight="Bold" Click="BtnSearch_Click"/>
+
+                    <CheckBox x:Name="chkSortFloors" Grid.Column="4" Content="Sortiraj po broju spratova" 
+                              HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="14" 
+                              Checked="ChkSortFloors_Changed" Unchecked="ChkSortFloors_Changed"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <DataGrid x:Name="dgBuildings" AutoGenerateColumns="False" IsReadOnly="True" 
+                      GridLinesVisibility="Horizontal" Background="White" RowBackground="#FFFFFF" 
+                      AlternatingRowBackground="#F9FAFB" FontSize="14" BorderBrush="#D1D5DB">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="ID Zgrade" Binding="{Binding id}" Width="100"/>
+                    <DataGridTextColumn Header="Adresa" Binding="{Binding PunaAdresa}" Width="2*"/>
+                    <DataGridTextColumn Header="Naselje" Binding="{Binding Neighbourhood}" Width="1.5*"/>
+                    <DataGridTextColumn Header="Lokacija" Binding="{Binding PunaLokacija}" Width="1.5*"/>
+                    <DataGridTextColumn Header="Broj spratova" Binding="{Binding numberOfFloors}" Width="120"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+    </Grid>
+</Window>

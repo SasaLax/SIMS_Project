@@ -5,8 +5,38 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CommunityHub.Ui.Views"
         mc:Ignorable="d"
-        Title="LogInWindow" Height="450" Width="800">
-    <Grid>
-        
+        Title="CommunityHub - Prijava na sistem" Height="400" Width="450" 
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize" Background="#F5F5F5">
+
+    <Grid Margin="30">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Community Hub" FontSize="28" FontWeight="Bold"
+                   Foreground="#333333" HorizontalAlignment="Center" Margin="0,0,0,30"/>
+
+        <StackPanel Grid.Row="1" Margin="0,0,0,15">
+            <TextBlock Text="Email adresa:" FontSize="14" Foreground="#666666" Margin="0,0,0,5"/>
+            <TextBox x:Name="txtEmail" Height="35" FontSize="14" VerticalContentAlignment="Center" Padding="5,0"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Margin="0,0,0,15">
+            <TextBlock Text="Lozinka:" FontSize="14" Foreground="#666666" Margin="0,0,0,5"/>
+            <PasswordBox x:Name="txtPassword" Height="35" FontSize="14" VerticalContentAlignment="Center" Padding="5,0"/>
+        </StackPanel>
+
+        <TextBlock x:Name="lblError" Grid.Row="3" Text="Pogrešan email ili lozinka!" 
+                   Foreground="Red" FontSize="13" HorizontalAlignment="Center" 
+                   Visibility="Collapsed" Margin="0,5,0,15"/>
+
+        <Button Grid.Row="4" Content="Prijavi se" Height="40" Width="150" 
+                FontSize="16" FontWeight="SemiBold" Background="#007ACC" Foreground="White" 
+                HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0"
+                Click="BtnLogin_Click" IsDefault="True"/>
     </Grid>
 </Window>
