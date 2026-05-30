@@ -1,106 +1,101 @@
+using System;
+using System.Collections.Generic;
 using System.Data;
 using CommunityHub.Application.Domain;
 
-namespace CommunityHub.Application.Database.Repositories;
-
-public class UserDbRepository
+namespace CommunityHub.Application.Database.Repositories
 {
-    public long? GetIdByCredentials(string username, string password)
+    public class UserDbRepository
     {
-        // using blok automatski zatvara konekciju na kraju bloka u kom je pozvan
-        using IDbConnection connection = PostgresConnection.CreateConnection();
-
-        IDbCommand command = connection.CreateCommand();
-        command.CommandText = "SELECT id FROM users WHERE username = @username AND password = @password";
-
-        // Parametrizovani upiti sprečavaju SQL injection napade
-        IDbDataParameter usernameParam = command.CreateParameter();
-        usernameParam.ParameterName = "@username";
-        usernameParam.Value = username;
-        command.Parameters.Add(usernameParam);
-
-        IDbDataParameter passwordParam = command.CreateParameter();
-        passwordParam.ParameterName = "@password";
-        passwordParam.Value = password;
-        command.Parameters.Add(passwordParam);
-
-        // ExecuteScalar vraća prvu kolonu prvog reda (id u ovom slučaju)
-        object? result = command.ExecuteScalar();
-
-        if (result != null)
+       
+        public long? GetIdByCredentials(string email, string password)
         {
-            return Convert.ToInt64(result);
-        }
+            using IDbConnection connection = PostgresConnection.CreateConnection();
 
-        return null;
-    }
+            using IDbCommand command = connection.CreateCommand();
+            command.CommandText = "SELECT id FROM users WHERE email = @email AND password = @password";
 
-    public User? GetWithPosts(long userId)
-    {
-        using IDbConnection connection = PostgresConnection.CreateConnection();
+            AddParameter(command, "@email", email);
+            AddParameter(command, "@password", password);
 
-        IDbCommand command = connection.CreateCommand();
-        // LEFT JOIN vraća korisnika čak i ako nema objave
-        // Rezultat: ako korisnik ima 3 objave, dobijamo 3 reda sa istim korisnikom
-        command.CommandText = @"
-            SELECT u.id, u.username, u.password, u.name, u.surname, u.birthday,
-                   p.id AS post_id, p.title, p.content, p.created_at
-            FROM users u
-            LEFT JOIN posts p ON u.id = p.user_id
-            WHERE u.id = @userId";
+            object? result = command.ExecuteScalar();
 
-        IDbDataParameter userIdParam = command.CreateParameter();
-        userIdParam.ParameterName = "@userId";
-        userIdParam.Value = userId;
-        command.Parameters.Add(userIdParam);
-
-        // ExecuteReader vraća IDataReader za čitanje više redova
-        using IDataReader reader = command.ExecuteReader();
-
-        User? user = null;
-
-        // RED predstavlja jedan horizontalni red u tabeli rezultata SQL upita
-        // Primer: Korisnik "Ana" sa 2 objave vraća 2 REDA:
-        //   Red 1: [Ana, Anić, 1998-08-22, Post1_id, "Naslov 1", "Sadržaj 1", 2024-01-16]
-        //   Red 2: [Ana, Anić, 1998-08-22, Post2_id, "Naslov 2", "Sadržaj 2", 2024-01-19]
-        // Reader je kao kursor koji ide red-po-red odozgo nadole
-        // Svaki reader.Read() pomera kursor na sledeći red i vraća true dok god ima redova
-        while (reader.Read())
-        {
-            // Kreiramo User objekat samo jednom (prvi red)
-            if (user == null)
+            if (result != null && result != DBNull.Value)
             {
-                // Indeksi kolona odgovaraju redosledu u SELECT listi (0-based)
-                long id = reader.GetInt64(0);
-                string username = reader.GetString(1);
-                string password = reader.GetString(2);
-                string name = reader.GetString(3);
-                string surname = reader.GetString(4);
-                DateTime birthday = reader.GetDateTime(5);
-                string roleString = reader.GetString(6);
-
-                if (!Enum.TryParse(roleString, out UserRole role))
-                {
-                    role = UserRole.Resident;
-                }
-
-                user = new User(id, username, password, name, surname, birthday, role);
+                return Convert.ToInt64(result);
             }
 
-            // IsDBNull proverava da li je vrednost NULL u bazi
-            // Ako korisnik nema objave, post_id će biti NULL
-            if (reader.IsDBNull(6)) continue;
-
-            long postId = reader.GetInt64(6);
-            string title = reader.GetString(7);
-            string content = reader.GetString(8);
-            DateTime createdAt = reader.GetDateTime(9);
-
-            Post post = new Post(postId, title, content, createdAt);
-            // AddPost metoda povezuje objavu sa korisnikom
-            user.AddPost(post);
+            return null;
         }
 
-        return user;
+        public User? GetById(long userId)
+        {
+            using IDbConnection connection = PostgresConnection.CreateConnection();
+
+            using IDbCommand command = connection.CreateCommand();
+            command.CommandText = "SELECT id, jmbg, email, password, name, surname, phone_number, user_type FROM users WHERE id = @userId";
+
+            AddParameter(command, "@userId", userId);
+
+            using IDataReader reader = command.ExecuteReader();
+            if (reader.Read())
+            {
+                return MapUserFromReader(reader);
+            }
+
+            return null;
+        }
+
+        
+        public void Save(User user)
+        {
+            using IDbConnection connection = PostgresConnection.CreateConnection();
+
+            using IDbCommand command = connection.CreateCommand();
+            command.CommandText = @"
+                INSERT INTO users (jmbg, email, password, name, surname, phone_number, user_type)
+                VALUES (@jmbg, @email, @password, @name, @surname, @phoneNumber, @userType)";
+
+            AddParameter(command, "@jmbg", user.Jmbg);
+            AddParameter(command, "@email", user.Email);
+            AddParameter(command, "@password", user.Password);
+            AddParameter(command, "@name", user.Name);
+            AddParameter(command, "@surname", user.Surname);
+            AddParameter(command, "@phoneNumber", user.PhoneNumber);
+           
+            AddParameter(command, "@userType", user.Role.ToString());
+
+            command.ExecuteNonQuery();
+        }
+
+        
+        private User MapUserFromReader(IDataReader reader)
+        {
+            long id = Convert.ToInt64(reader.GetValue(0));
+            string jmbg = reader.GetString(1);
+            string email = reader.GetString(2);
+            string password = reader.GetString(3);
+            string name = reader.GetString(4);
+            string surname = reader.GetString(5);
+            string phoneNumber = reader.GetString(6);
+            string roleString = reader.GetString(7);
+
+            //teskst iz baze nazad u c#
+            if (!Enum.TryParse(roleString, out UserRole role))
+            {
+                role = UserRole.Resident; // default je resident
+            }
+
+            return new User(id, jmbg, email, password, name, surname, phoneNumber, role);
+        }
+
+        //sprecava sqlinjection
+        public void AddParameter(IDbCommand command, string name, object value)
+        {
+            IDbDataParameter parameter = command.CreateParameter();
+            parameter.ParameterName = name;
+            parameter.Value = value;
+            command.Parameters.Add(parameter);
+        }
     }
 }

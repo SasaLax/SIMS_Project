@@ -1,3 +1,5 @@
+using System;
+
 namespace CommunityHub.Application.Domain;
 
 public enum UserRole
@@ -6,37 +8,27 @@ public enum UserRole
     Resident,
     Manager
 }
+
 public class User
 {
     public long Id { get; private set; }
-    public string Username { get; private set; }
+    public string Jmbg { get; private set; }
+    public string Email { get; private set; }
     public string Password { get; private set; }
     public string Name { get; private set; }
     public string Surname { get; private set; }
-    public DateTime BirthDay { get; private set; }
-    public List<Post>? Posts { get; private set; }
+    public string PhoneNumber { get; private set; }
     public UserRole Role { get; private set; }
 
-    public User(long id, string username, string password, string name, string surname, DateTime birthDay, UserRole role)
+    public User(long id, string jmbg, string email, string password, string name, string surname, string phoneNumber, UserRole role)
     {
         Id = id;
-        Username = username;
+        Jmbg = jmbg;
+        Email = email;
         Password = password;
         Name = name;
         Surname = surname;
-        BirthDay = birthDay;
-        Posts = null;
+        PhoneNumber = phoneNumber;
         Role = role;
-    }
-
-    public void AddPost(Post post)
-    {
-        if (Posts == null)
-        {
-            Posts = new List<Post>();
-        }
-
-        Posts.Add(post);
-        post.User = this;
     }
 }
