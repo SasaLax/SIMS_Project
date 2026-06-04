@@ -17,13 +17,11 @@ namespace CommunityHub.Ui.Views
 
         private void BtnLogin_Click(object sender, RoutedEventArgs e)
         {
-           
             lblError.Visibility = Visibility.Collapsed;
 
             string email = txtEmail.Text.Trim();
-            string password = txtPassword.Password; 
+            string password = txtPassword.Password;
 
-            //validacija praznih polja
             if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
             {
                 lblError.Text = "Molimo unesite email i lozinku.";
@@ -33,7 +31,6 @@ namespace CommunityHub.Ui.Views
 
             try
             {
-                
                 long? userId = _userRepository.GetIdByCredentials(email, password);
 
                 if (userId == null)
@@ -65,11 +62,19 @@ namespace CommunityHub.Ui.Views
 
         private void PreusmjeriKorisnikaNaMeni(User user)
         {
-            
             HomeWindow homeWin = new HomeWindow(user.Id, user.Role);
             homeWin.Show();
-
             this.Close();
+        }
+
+        // New handler: open register window
+        private void BtnOpenRegister_Click(object sender, RoutedEventArgs e)
+        {
+            var registerWindow = new RegisterResidentWindow
+            {
+                Owner = this
+            };
+            registerWindow.ShowDialog();
         }
     }
 }

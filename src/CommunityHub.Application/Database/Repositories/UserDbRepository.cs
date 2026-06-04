@@ -46,7 +46,77 @@ namespace CommunityHub.Application.Database.Repositories
             return null;
         }
 
-        
+        public User? GetByEmail(string email)
+        {
+            using IDbConnection connection = PostgresConnection.CreateConnection();
+
+            using IDbCommand command = connection.CreateCommand();
+            command.CommandText = "SELECT id, jmbg, email, password, name, surname, phone_number, user_type FROM users WHERE email = @email";
+
+            AddParameter(command, "@email", email);
+
+            using IDataReader reader = command.ExecuteReader();
+            if (reader.Read())
+            {
+                return MapUserFromReader(reader);
+            }
+
+            return null;
+        }
+
+        public bool EmailExists(string email)
+        {
+            using IDbConnection connection = PostgresConnection.CreateConnection();
+
+            using IDbCommand command = connection.CreateCommand();
+            command.CommandText = "SELECT 1 FROM users WHERE email = @email LIMIT 1";
+
+            AddParameter(command, "@email", email);
+
+            object? result = command.ExecuteScalar();
+            return result != null && result != DBNull.Value;
+        }
+
+        public bool JmbgExists(string jmbg)
+        {
+            using IDbConnection connection = PostgresConnection.CreateConnection();
+
+            using IDbCommand command = connection.CreateCommand();
+            command.CommandText = "SELECT 1 FROM users WHERE jmbg = @jmbg LIMIT 1";
+
+            AddParameter(command, "@jmbg", jmbg);
+
+            object? result = command.ExecuteScalar();
+            return result != null && result != DBNull.Value;
+        }
+
+        public long Create(User user)
+        {
+            using IDbConnection connection = PostgresConnection.CreateConnection();
+
+            using IDbCommand command = connection.CreateCommand();
+            command.CommandText = @"
+                INSERT INTO users (jmbg, email, password, name, surname, phone_number, user_type)
+                VALUES (@jmbg, @email, @password, @name, @surname, @phoneNumber, @userType)
+                RETURNING id";
+
+            AddParameter(command, "@jmbg", user.Jmbg);
+            AddParameter(command, "@email", user.Email);
+            AddParameter(command, "@password", user.Password);
+            AddParameter(command, "@name", user.Name);
+            AddParameter(command, "@surname", user.Surname);
+            AddParameter(command, "@phoneNumber", user.PhoneNumber);
+            AddParameter(command, "@userType", user.Role.ToString());
+
+            object? result = command.ExecuteScalar();
+            if (result == null || result == DBNull.Value)
+            {
+                throw new InvalidOperationException("Failed to insert user.");
+            }
+
+            return Convert.ToInt64(result);
+        }
+
         public void Save(User user)
         {
             using IDbConnection connection = PostgresConnection.CreateConnection();
@@ -89,7 +159,6 @@ namespace CommunityHub.Application.Database.Repositories
             return new User(id, jmbg, email, password, name, surname, phoneNumber, role);
         }
 
-        //sprecava sqlinjection
         public void AddParameter(IDbCommand command, string name, object value)
         {
             IDbDataParameter parameter = command.CreateParameter();

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Net.Sockets;
 using System.Text;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CommunityHub.Application.Domain
 {
@@ -28,6 +29,24 @@ namespace CommunityHub.Application.Domain
             this.Location = location;
             this.numberOfFloors = numberOfFloors;
             this.Manager = manager;
+        }
+
+        public string FullAddress
+        {
+            get
+            {
+                if (Address == null) return "";
+                return $"{Address.Street} {Address.Number}".Trim();
+            }
+        }
+
+        public string FullLocation
+        {
+            get
+            {
+                if (Location == null) return Neighbourhood;
+                return $"{Location.City}, {Location.Country}".Trim();
+            }
         }
 
     }

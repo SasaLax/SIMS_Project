@@ -30,10 +30,8 @@ INSERT INTO apartments (id, description, number_of_rooms, max_number_of_resident
 (10, 'Dvosoban stan, pogled na ulicu', 2, 4, 'ZGRADA-BG-01'),
 (11, 'Garsonjera, dvorišno orijentisana', 1, 2, 'ZGRADA-BG-01'),
 (12, 'Trosoban stan sa terasom', 3, 6, 'ZGRADA-BG-01'),
-
 (10, 'Luksuzan penthaus na vrhu', 4, 5, 'ZGRADA-NS-01'),
 (11, 'Jednosoban stan, namešten', 1, 2, 'ZGRADA-NS-01'),
 (12, 'Dvosoban stan, renoviran', 2, 4, 'ZGRADA-NS-01'),
-
 (101, 'Mali stan u prizemlju', 1, 2, 'ZGRADA-NI-01'),
 (102, 'Dvosoban komforan stan', 2, 4, 'ZGRADA-NI-01');
