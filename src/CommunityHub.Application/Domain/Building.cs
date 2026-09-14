@@ -1,34 +1,35 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.Common;
-using System.Net.Sockets;
-using System.Text;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using System;
 
 namespace CommunityHub.Application.Domain
 {
+    public enum BuildingStatus
+    {
+        Pending,
+        Approved,
+        Rejected
+    }
+
     public class Building
     {
-        public string id { get; private set; }
-
+        public long Id { get; private set; }
+        public string BuildingCode { get; private set; }
         public Address Address { get; private set; }
-
         public string Neighbourhood { get; private set; }
-
         public Location Location { get; private set; }
+        public int NumberOfFloors { get; private set; }
+        public string? ManagerJmbg { get; private set; }
+        public BuildingStatus Status { get; private set; }
 
-        public int numberOfFloors { get; private set; }
-
-        public string? Manager { get; private set; } 
-
-        public Building(string id, Address address, string neighbourhood, Location location, int numberOfFloors, string? manager)
+        public Building(long id, string buildingCode, Address address, string neighbourhood, Location location, int numberOfFloors, string? managerJmbg, BuildingStatus status = BuildingStatus.Pending)
         {
-            this.id = id;
-            this.Address = address;
-            this.Neighbourhood = neighbourhood;
-            this.Location = location;
-            this.numberOfFloors = numberOfFloors;
-            this.Manager = manager;
+            Id = id;
+            BuildingCode = buildingCode;
+            Address = address;
+            Neighbourhood = neighbourhood;
+            Location = location;
+            NumberOfFloors = numberOfFloors;
+            ManagerJmbg = managerJmbg;
+            Status = status;
         }
 
         public string FullAddress
@@ -49,5 +50,7 @@ namespace CommunityHub.Application.Domain
             }
         }
 
+        public void Approve() => Status = BuildingStatus.Approved;
+        public void Reject() => Status = BuildingStatus.Rejected;
     }
 }

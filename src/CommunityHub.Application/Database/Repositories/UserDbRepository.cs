@@ -2,169 +2,181 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using CommunityHub.Application.Domain;
+using CommunityHub.Application.Domain.RepositoryInterfaces;
 
-namespace CommunityHub.Application.Database.Repositories
+namespace CommunityHub.Application.Database.Repositories;
+
+public class UserDbRepository : IUserRepository
 {
-    public class UserDbRepository
+    public long? GetIdByCredentials(string email, string password)
     {
-       
-        public long? GetIdByCredentials(string email, string password)
+        using IDbConnection connection = PostgresConnection.CreateConnection();
+
+        using IDbCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT id FROM users WHERE email = @email AND password = @password";
+
+        AddParameter(command, "@email", email);
+        AddParameter(command, "@password", password);
+
+        object? result = command.ExecuteScalar();
+
+        if (result != null && result != DBNull.Value)
         {
-            using IDbConnection connection = PostgresConnection.CreateConnection();
-
-            using IDbCommand command = connection.CreateCommand();
-            command.CommandText = "SELECT id FROM users WHERE email = @email AND password = @password";
-
-            AddParameter(command, "@email", email);
-            AddParameter(command, "@password", password);
-
-            object? result = command.ExecuteScalar();
-
-            if (result != null && result != DBNull.Value)
-            {
-                return Convert.ToInt64(result);
-            }
-
-            return null;
+            return Convert.ToInt64(result);
         }
 
-        public User? GetById(long userId)
+        return null;
+    }
+
+    public User? GetById(long userId)
+    {
+        using IDbConnection connection = PostgresConnection.CreateConnection();
+
+        using IDbCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT id, jmbg, email, password, name, surname, phone_number, user_type FROM users WHERE id = @userId";
+
+        AddParameter(command, "@userId", userId);
+
+        using IDataReader reader = command.ExecuteReader();
+        if (reader.Read())
         {
-            using IDbConnection connection = PostgresConnection.CreateConnection();
-
-            using IDbCommand command = connection.CreateCommand();
-            command.CommandText = "SELECT id, jmbg, email, password, name, surname, phone_number, user_type FROM users WHERE id = @userId";
-
-            AddParameter(command, "@userId", userId);
-
-            using IDataReader reader = command.ExecuteReader();
-            if (reader.Read())
-            {
-                return MapUserFromReader(reader);
-            }
-
-            return null;
+            return MapUserFromReader(reader);
         }
 
-        public User? GetByEmail(string email)
+        return null;
+    }
+
+    public User? GetByEmail(string email)
+    {
+        using IDbConnection connection = PostgresConnection.CreateConnection();
+
+        using IDbCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT id, jmbg, email, password, name, surname, phone_number, user_type FROM users WHERE email = @email";
+
+        AddParameter(command, "@email", email);
+
+        using IDataReader reader = command.ExecuteReader();
+        if (reader.Read())
         {
-            using IDbConnection connection = PostgresConnection.CreateConnection();
-
-            using IDbCommand command = connection.CreateCommand();
-            command.CommandText = "SELECT id, jmbg, email, password, name, surname, phone_number, user_type FROM users WHERE email = @email";
-
-            AddParameter(command, "@email", email);
-
-            using IDataReader reader = command.ExecuteReader();
-            if (reader.Read())
-            {
-                return MapUserFromReader(reader);
-            }
-
-            return null;
+            return MapUserFromReader(reader);
         }
 
-        public bool EmailExists(string email)
-        {
-            using IDbConnection connection = PostgresConnection.CreateConnection();
+        return null;
+    }
 
-            using IDbCommand command = connection.CreateCommand();
-            command.CommandText = "SELECT 1 FROM users WHERE email = @email LIMIT 1";
+    public bool EmailExists(string email)
+    {
+        using IDbConnection connection = PostgresConnection.CreateConnection();
 
-            AddParameter(command, "@email", email);
+        using IDbCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT 1 FROM users WHERE email = @email LIMIT 1";
 
-            object? result = command.ExecuteScalar();
-            return result != null && result != DBNull.Value;
-        }
+        AddParameter(command, "@email", email);
 
-        public bool JmbgExists(string jmbg)
-        {
-            using IDbConnection connection = PostgresConnection.CreateConnection();
+        object? result = command.ExecuteScalar();
+        return result != null && result != DBNull.Value;
+    }
 
-            using IDbCommand command = connection.CreateCommand();
-            command.CommandText = "SELECT 1 FROM users WHERE jmbg = @jmbg LIMIT 1";
+    public bool JmbgExists(string jmbg)
+    {
+        using IDbConnection connection = PostgresConnection.CreateConnection();
 
-            AddParameter(command, "@jmbg", jmbg);
+        using IDbCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT 1 FROM users WHERE jmbg = @jmbg LIMIT 1";
 
-            object? result = command.ExecuteScalar();
-            return result != null && result != DBNull.Value;
-        }
+        AddParameter(command, "@jmbg", jmbg);
 
-        public long Create(User user)
-        {
-            using IDbConnection connection = PostgresConnection.CreateConnection();
+        object? result = command.ExecuteScalar();
+        return result != null && result != DBNull.Value;
+    }
 
-            using IDbCommand command = connection.CreateCommand();
-            command.CommandText = @"
+    public bool PasswordExists(string password)
+    {
+        using IDbConnection connection = PostgresConnection.CreateConnection();
+
+        using IDbCommand command = connection.CreateCommand();
+        command.CommandText = "SELECT 1 FROM users WHERE password = @password LIMIT 1";
+
+        AddParameter(command, "@password", password);
+
+        object? result = command.ExecuteScalar();
+        return result != null && result != DBNull.Value;
+    }
+
+    public long Create(User user)
+    {
+        using IDbConnection connection = PostgresConnection.CreateConnection();
+
+        using IDbCommand command = connection.CreateCommand();
+        command.CommandText = @"
                 INSERT INTO users (jmbg, email, password, name, surname, phone_number, user_type)
                 VALUES (@jmbg, @email, @password, @name, @surname, @phoneNumber, @userType)
                 RETURNING id";
 
-            AddParameter(command, "@jmbg", user.Jmbg);
-            AddParameter(command, "@email", user.Email);
-            AddParameter(command, "@password", user.Password);
-            AddParameter(command, "@name", user.Name);
-            AddParameter(command, "@surname", user.Surname);
-            AddParameter(command, "@phoneNumber", user.PhoneNumber);
-            AddParameter(command, "@userType", user.Role.ToString());
+        AddParameter(command, "@jmbg", user.Jmbg);
+        AddParameter(command, "@email", user.Email);
+        AddParameter(command, "@password", user.Password);
+        AddParameter(command, "@name", user.Name);
+        AddParameter(command, "@surname", user.Surname);
+        AddParameter(command, "@phoneNumber", user.PhoneNumber);
+        AddParameter(command, "@userType", user.Role.ToString());
 
-            object? result = command.ExecuteScalar();
-            if (result == null || result == DBNull.Value)
-            {
-                throw new InvalidOperationException("Failed to insert user.");
-            }
-
-            return Convert.ToInt64(result);
+        object? result = command.ExecuteScalar();
+        if (result == null || result == DBNull.Value)
+        {
+            throw new InvalidOperationException("Failed to insert user.");
         }
 
-        public void Save(User user)
-        {
-            using IDbConnection connection = PostgresConnection.CreateConnection();
+        return Convert.ToInt64(result);
+    }
 
-            using IDbCommand command = connection.CreateCommand();
-            command.CommandText = @"
+    public void Save(User user)
+    {
+        using IDbConnection connection = PostgresConnection.CreateConnection();
+
+        using IDbCommand command = connection.CreateCommand();
+        command.CommandText = @"
                 INSERT INTO users (jmbg, email, password, name, surname, phone_number, user_type)
                 VALUES (@jmbg, @email, @password, @name, @surname, @phoneNumber, @userType)";
 
-            AddParameter(command, "@jmbg", user.Jmbg);
-            AddParameter(command, "@email", user.Email);
-            AddParameter(command, "@password", user.Password);
-            AddParameter(command, "@name", user.Name);
-            AddParameter(command, "@surname", user.Surname);
-            AddParameter(command, "@phoneNumber", user.PhoneNumber);
+        AddParameter(command, "@jmbg", user.Jmbg);
+        AddParameter(command, "@email", user.Email);
+        AddParameter(command, "@password", user.Password);
+        AddParameter(command, "@name", user.Name);
+        AddParameter(command, "@surname", user.Surname);
+        AddParameter(command, "@phoneNumber", user.PhoneNumber);
            
-            AddParameter(command, "@userType", user.Role.ToString());
+        AddParameter(command, "@userType", user.Role.ToString());
 
-            command.ExecuteNonQuery();
-        }
+        command.ExecuteNonQuery();
+    }
 
         
-        private User MapUserFromReader(IDataReader reader)
+    private User MapUserFromReader(IDataReader reader)
+    {
+        long id = Convert.ToInt64(reader.GetValue(0));
+        string jmbg = reader.GetString(1);
+        string email = reader.GetString(2);
+        string password = reader.GetString(3);
+        string name = reader.GetString(4);
+        string surname = reader.GetString(5);
+        string phoneNumber = reader.GetString(6);
+        string roleString = reader.GetString(7);
+
+        //teskst iz baze nazad u c#
+        if (!Enum.TryParse(roleString, out UserRole role))
         {
-            long id = Convert.ToInt64(reader.GetValue(0));
-            string jmbg = reader.GetString(1);
-            string email = reader.GetString(2);
-            string password = reader.GetString(3);
-            string name = reader.GetString(4);
-            string surname = reader.GetString(5);
-            string phoneNumber = reader.GetString(6);
-            string roleString = reader.GetString(7);
-
-            //teskst iz baze nazad u c#
-            if (!Enum.TryParse(roleString, out UserRole role))
-            {
-                role = UserRole.Resident; // default je resident
-            }
-
-            return new User(id, jmbg, email, password, name, surname, phoneNumber, role);
+            role = UserRole.Resident; // default je resident
         }
 
-        public void AddParameter(IDbCommand command, string name, object value)
-        {
-            IDbDataParameter parameter = command.CreateParameter();
-            parameter.ParameterName = name;
-            parameter.Value = value;
-            command.Parameters.Add(parameter);
-        }
+        return new User(id, jmbg, email, password, name, surname, phoneNumber, role);
+    }
+
+    public void AddParameter(IDbCommand command, string name, object value)
+    {
+        IDbDataParameter parameter = command.CreateParameter();
+        parameter.ParameterName = name;
+        parameter.Value = value;
+        command.Parameters.Add(parameter);
     }
 }

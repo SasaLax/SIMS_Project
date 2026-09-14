@@ -1,14 +1,12 @@
-﻿using System;
 using System.Collections.Generic;
-using CommunityHub.Application.Database.Repositories;
+using CommunityHub.Application;
 using CommunityHub.Application.Domain;
+using CommunityHub.Application.Service;
 
 namespace CommunityHub.Ui.Helpers
 {
     public static class BuildingSearchParser
     {
-        private static readonly BuildingDbRepository _buildingRepository = new BuildingDbRepository();
-
         public static List<Building> ParseAndSearch(string unosiText)
         {
             int sobe = 0;
@@ -37,7 +35,8 @@ namespace CommunityHub.Ui.Helpers
                 op = "";
             }
 
-            return _buildingRepository.SearchByApartmentsAdvanced(sobe, stanari, op);
+            var buildingService = Injector.CreateInstance<IBuildingService>();
+            return buildingService.SearchByApartmentsAdvanced(sobe, stanari, op);
         }
     }
 }

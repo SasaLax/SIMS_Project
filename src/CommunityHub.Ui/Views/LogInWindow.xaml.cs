@@ -1,18 +1,19 @@
-﻿using System;
+using System;
 using System.Windows;
-using CommunityHub.Application.Database.Repositories;
+using CommunityHub.Application;
 using CommunityHub.Application.Domain;
+using CommunityHub.Application.Service;
 
 namespace CommunityHub.Ui.Views
 {
     public partial class LogInWindow : Window
     {
-        private readonly UserDbRepository _userRepository;
+        private readonly IUserService _userService;
 
         public LogInWindow()
         {
             InitializeComponent();
-            _userRepository = new UserDbRepository();
+            _userService = Injector.CreateInstance<IUserService>();
         }
 
         private void BtnLogin_Click(object sender, RoutedEventArgs e)
@@ -22,36 +23,15 @@ namespace CommunityHub.Ui.Views
             string email = txtEmail.Text.Trim();
             string password = txtPassword.Password;
 
-            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
-            {
-                lblError.Text = "Molimo unesite email i lozinku.";
-                lblError.Visibility = Visibility.Visible;
-                return;
-            }
-
             try
             {
-                long? userId = _userRepository.GetIdByCredentials(email, password);
-
-                if (userId == null)
-                {
-                    lblError.Text = "Pogrešan email ili lozinka!";
-                    lblError.Visibility = Visibility.Visible;
-                }
-                else
-                {
-                    User? loggedInUser = _userRepository.GetById(userId.Value);
-
-                    if (loggedInUser != null)
-                    {
-                        PreusmjeriKorisnikaNaMeni(loggedInUser);
-                    }
-                    else
-                    {
-                        lblError.Text = "Greška pri učitavanju profila korisnika.";
-                        lblError.Visibility = Visibility.Visible;
-                    }
-                }
+                User loggedInUser = _userService.Login(email, password);
+                PreusmjeriKorisnikaNaMeni(loggedInUser);
+            }
+            catch (InvalidOperationException ex)
+            {
+                lblError.Text = ex.Message;
+                lblError.Visibility = Visibility.Visible;
             }
             catch (Exception ex)
             {
@@ -62,12 +42,11 @@ namespace CommunityHub.Ui.Views
 
         private void PreusmjeriKorisnikaNaMeni(User user)
         {
-            HomeWindow homeWin = new HomeWindow(user.Id, user.Role);
+            HomeWindow homeWin = new HomeWindow(user.Id, user.Role, user.Jmbg);
             homeWin.Show();
-            this.Close();
+            Close();
         }
 
-        // New handler: open register window
         private void BtnOpenRegister_Click(object sender, RoutedEventArgs e)
         {
             var registerWindow = new RegisterResidentWindow
