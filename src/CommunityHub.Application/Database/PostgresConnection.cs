@@ -17,7 +17,9 @@ public static class PostgresConnection
 
     private static string LoadConnectionString()
     {
-        var configPath = Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json");
+        var configPath = FindConfigPath()
+            ?? throw new FileNotFoundException(
+                "Configuration file 'appsettings.json' not found. Expected it next to the executable or in the current working directory.");
 
         if (!File.Exists(configPath))
         {
@@ -38,5 +40,24 @@ public static class PostgresConnection
         }
 
         return connectionString;
+    }
+
+    private static string? FindConfigPath()
+    {
+        var candidates = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "appsettings.json"),
+            Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json")
+        };
+
+        foreach (var candidate in candidates)
+        {
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
     }
 }

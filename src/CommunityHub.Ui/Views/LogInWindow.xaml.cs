@@ -1,25 +1,59 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+using CommunityHub.Application;
+using CommunityHub.Application.Domain;
+using CommunityHub.Application.Service;
 
 namespace CommunityHub.Ui.Views
 {
-    /// <summary>
-    /// Interaction logic for LogInWindow.xaml
-    /// </summary>
     public partial class LogInWindow : Window
     {
+        private readonly IUserService _userService;
+
         public LogInWindow()
         {
             InitializeComponent();
+            _userService = Injector.CreateInstance<IUserService>();
+        }
+
+        private void BtnLogin_Click(object sender, RoutedEventArgs e)
+        {
+            lblError.Visibility = Visibility.Collapsed;
+
+            string email = txtEmail.Text.Trim();
+            string password = txtPassword.Password;
+
+            try
+            {
+                User loggedInUser = _userService.Login(email, password);
+                PreusmjeriKorisnikaNaMeni(loggedInUser);
+            }
+            catch (InvalidOperationException ex)
+            {
+                lblError.Text = ex.Message;
+                lblError.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Greška prilikom povezivanja sa bazom podataka:\n{ex.Message}",
+                                "Greška", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void PreusmjeriKorisnikaNaMeni(User user)
+        {
+            HomeWindow homeWin = new HomeWindow(user.Id, user.Role, user.Jmbg);
+            homeWin.Show();
+            Close();
+        }
+
+        private void BtnOpenRegister_Click(object sender, RoutedEventArgs e)
+        {
+            var registerWindow = new RegisterResidentWindow
+            {
+                Owner = this
+            };
+            registerWindow.ShowDialog();
         }
     }
 }

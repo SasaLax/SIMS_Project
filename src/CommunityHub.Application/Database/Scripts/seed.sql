@@ -1,3 +1,5 @@
+TRUNCATE TABLE requests, apartments, buildings, addresses, locations, users RESTART IDENTITY CASCADE;
+
 INSERT INTO users (id, jmbg, email, password, name, surname, phone_number, user_type) VALUES
 (-1, '1505000710011', 'marko@gmail.com', 'marko123', 'Marko', 'Marković', '+38765111222', 'Manager'),
 (-2, '2208998715022', 'ana@gmail.com', 'ana123', 'Ana', 'Anić', '+38765333444', 'Manager'),
@@ -8,35 +10,11 @@ INSERT INTO users (id, jmbg, email, password, name, surname, phone_number, user_
 (-7, '1812997710077', 'nikola@gmail.com', 'nikola123', 'Nikola', 'Nikolić', '+38766333444', 'Resident'),
 (-8, '0509001710088', 'ivana@gmail.com', 'ivana123', 'Ivana', 'Ivanović', '+38766555666', 'Resident');
 
-INSERT INTO posts (id, title, content, created_at, user_id) VALUES
-(-1, 'Moj prvi post', 'Ovo je moj prvi post na platformi!', '2024-01-15 10:30:00', -1),
-(-2, 'Zanimljiv dan', 'Danas sam imao vrlo zanimljiv dan na fakultetu.', '2024-01-17 09:15:00', -1),
-(-3, 'Programiranje', 'Učim C# i WPF, jako je interesantno!', '2024-01-20 14:30:00', -1),
-(-4, 'Dobrodošli', 'Drago mi je što sam ovde.', '2024-01-16 14:20:00', -2),
-(-5, 'Vikend planovi', 'Šta planirate za vikend?', '2024-01-19 16:00:00', -2),
-(-6, 'Nova knjiga', 'Počela sam da čitam novu knjigu o programiranju.', '2024-01-22 11:00:00', -2),
-(-7, 'Nova tema', 'Želim da podelim nešto interesantno o bazama podataka.', '2024-01-18 11:45:00', -3),
-(-8, 'SQL je moćan', 'SQL je neverovatno moćan jezik za rad sa podacima.', '2024-01-21 10:00:00', -3),
-(-9, 'Postgres', 'Postgres je odličan sistem za upravljanje bazama.', '2024-01-23 15:30:00', -3),
-(-10, 'Učenje programiranja', 'Programiranje je fascinantno!', '2024-01-20 08:30:00', -4),
-(-11, 'Moj projekat', 'Radim na zanimljivom projektu.', '2024-01-22 13:15:00', -4),
-(-12, 'Pozdrav svima', 'Zdravo svima iz zajednice!', '2024-01-21 12:00:00', -5),
-(-13, 'Sport', 'Volim da trčim ujutru pre posla.', '2024-01-23 07:00:00', -5),
-(-14, 'Muzika', 'Slušam jazz muziku dok programiram.', '2024-01-24 18:30:00', -5),
-(-15, 'Moje iskustvo', 'Delim svoje iskustvo sa bazama podataka.', '2024-01-22 15:30:00', -6),
-(-16, 'Kafa', 'Najbolja kafa je ujutru!', '2024-01-24 08:00:00', -6),
-(-17, 'Fudbal', 'Volim da gledam fudbal vikendom.', '2024-01-21 16:00:00', -7),
-(-18, 'Putovanje', 'Planiram putovanje na more.', '2024-01-24 12:00:00', -7),
-(-19, 'Film', 'Pogledala sam odličan film sinoć.', '2024-01-22 20:00:00', -8),
-(-20, 'Trening', 'Redovno treniram u teretani.', '2024-01-25 06:30:00', -8);
-
-
 INSERT INTO locations (id, city, country) VALUES
 (-1, 'Beograd', 'Srbija'),
 (-2, 'Novi Sad', 'Srbija'),
 (-3, 'Niš', 'Srbija');
 
--- 2. INSERT ZA ADRESE (addresses)
 INSERT INTO addresses (id, street, number) VALUES
 (-1, 'Knez Mihailova', 10),
 (-2, 'Bulevar Oslobođenja', 45),
@@ -44,20 +22,55 @@ INSERT INTO addresses (id, street, number) VALUES
 (-4, 'Njegoševa', 8);
 
 
-INSERT INTO buildings (id, address_id, neighbourhood, location_id, number_of_floors, manager_jmbg) VALUES
-('ZGRADA-BG-01', -1, 'Stari Grad', -1, 5, '1505000710011'), -- Upravnik Marko (id: -1)
-('ZGRADA-NS-01', -2, 'Limman 3', -2, 8, '2208998715022'),  -- Upravnik Ana (id: -2)
-('ZGRADA-NI-01', -3, 'Medijana', -3, 4, '1003001710033'),  -- Upravnik Petar (id: -3)
-('ZGRADA-BG-02', -4, 'Vračar', -1, 6, NULL);               -- Zgrada bez upravnika (NULL)
+-- Insert buildings and return their generated IDs
+WITH inserted_buildings AS (
+    INSERT INTO buildings (id, building_code, address_id, neighbourhood, location_id, number_of_floors, manager_jmbg, status) 
+    VALUES
+        (-1, 'ZGRADA-BG-01', -1, 'Stari Grad', -1, 5, '1505000710011', 'Approved'),
+        (-2, 'ZGRADA-NS-01', -2, 'Liman 3',    -2, 8, '2208998715022', 'Approved'),
+        (-3, 'ZGRADA-NI-01', -3, 'Medijana',   -3, 4, '1003001710033', 'Approved'),
+        (-4, 'ZGRADA-BG-02', -4, 'Vračar',     -1, 6, NULL,            'Approved')
+    ON CONFLICT (id) DO UPDATE 
+    SET 
+        building_code    = EXCLUDED.building_code,
+        neighbourhood    = EXCLUDED.neighbourhood,
+        address_id       = EXCLUDED.address_id,
+        location_id      = EXCLUDED.location_id,
+        number_of_floors = EXCLUDED.number_of_floors,
+        manager_jmbg     = EXCLUDED.manager_jmbg,
+        status           = EXCLUDED.status
+    RETURNING id, building_code
+),
+inserted_apartments AS (
+    INSERT INTO apartments (apartment_number, description, number_of_rooms, max_number_of_residents, building_id)
+    SELECT ap_data.apartment_number, ap_data.description, ap_data.number_of_rooms, ap_data.max_number_of_residents, ib.id
+    FROM ( VALUES
+        (1, 'Dvosoban stan, pogled na ulicu', 2, 4, 'ZGRADA-BG-01'),
+        (2, 'Garsonjera, dvorišno orijentisana', 1, 2, 'ZGRADA-BG-01'),
+        (3, 'Trosoban stan sa velikom terasom', 3, 5, 'ZGRADA-BG-01'),
 
-INSERT INTO apartments (id, description, number_of_rooms, max_number_of_residents, building_id) VALUES
-(10, 'Dvosoban stan, pogled na ulicu', 2, 4, 'ZGRADA-BG-01'),
-(11, 'Garsonjera, dvorišno orijentisana', 1, 2, 'ZGRADA-BG-01'),
-(12, 'Trosoban stan sa terasom', 3, 6, 'ZGRADA-BG-01'),
+        (1, 'Luksuzan četvorosoban penthaus na vrhu', 4, 6, 'ZGRADA-NS-01'),
+        (2, 'Jednosoban stan, moderno namešten', 1, 1, 'ZGRADA-NS-01'),
+        (3, 'Komforan trosoban stan, renoviran', 3, 4, 'ZGRADA-NS-01'),
 
-(10, 'Luksuzan penthaus na vrhu', 4, 5, 'ZGRADA-NS-01'),
-(11, 'Jednosoban stan, namešten', 1, 2, 'ZGRADA-NS-01'),
-(12, 'Dvosoban stan, renoviran', 2, 4, 'ZGRADA-NS-01'),
+        (1, 'Mala garsonjera u prizemlju', 1, 2, 'ZGRADA-NI-01'),
+        (2, 'Dvosoban stan sa balkonom', 2, 3, 'ZGRADA-NI-01'),
+        (3, 'Četvorosoban porodični stan', 4, 7, 'ZGRADA-NI-01'),
 
-(101, 'Mali stan u prizemlju', 1, 2, 'ZGRADA-NI-01'),
-(102, 'Dvosoban komforan stan', 2, 4, 'ZGRADA-NI-01');
+        (1, 'Jednoiposoban stan, tih i svetao', 2, 3, 'ZGRADA-BG-02'),
+        (2, 'Petosoban dvoetažni stan', 5, 8, 'ZGRADA-BG-02'),
+        (3, 'Trosoban stan sa pogledom na park', 3, 5, 'ZGRADA-BG-02')
+    ) AS ap_data(apartment_number, description, number_of_rooms, max_number_of_residents, building_code)
+    JOIN inserted_buildings ib ON ap_data.building_code = ib.building_code
+    RETURNING id, apartment_number, building_id
+)
+-- Now insert requests using the generated building IDs
+INSERT INTO requests (user_id, building_id, apartment_number, created_at, status, rejection_reason, handled_by, handled_at)
+SELECT
+    req_data.user_id, ib.id, req_data.apartment_number, req_data.created_at, req_data.status, req_data.rejection_reason, req_data.handled_by, req_data.handled_at
+FROM ( VALUES
+    (-5, 'ZGRADA-BG-01', 10, '2025-11-01 10:00:00'::timestamp, 'Pending', NULL, NULL, NULL),
+    (-6, 'ZGRADA-BG-01', 11, '2025-11-02 11:00:00'::timestamp, 'Approved', NULL, -1, '2025-11-03 09:00:00'::timestamp),
+    (-7, 'ZGRADA-NS-01', 12, '2025-11-04 12:30:00'::timestamp, 'Rejected', 'Apartment already assigned', -2, '2025-11-05 14:00:00'::timestamp)
+) AS req_data(user_id, building_code, apartment_number, created_at, status, rejection_reason, handled_by, handled_at)
+JOIN buildings ib ON req_data.building_code = ib.building_code;
